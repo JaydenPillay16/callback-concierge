@@ -1,7 +1,14 @@
 import json
+import sys
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import lambda_create_callback
+
+# Add the Lambda directory to Python's import path.
+LAMBDA_DIR = Path(__file__).resolve().parents[1] / "lambda" / "create_callback"
+sys.path.insert(0, str(LAMBDA_DIR))
+
+import handler as create_callback_handler
 
 
 def test_create_callback_success():
@@ -9,7 +16,7 @@ def test_create_callback_success():
         "body": json.dumps(
             {
                 "phoneNumber": "+27821234567",
-                "reason": "Billing enquiry"
+                "reason": "Billing enquiry",
             }
         )
     }
@@ -17,16 +24,16 @@ def test_create_callback_success():
     mock_table = MagicMock()
 
     with patch.object(
-        lambda_create_callback,
+        create_callback_handler,
         "TABLE_NAME",
-        "callback-requests"
+        "callback-concierge-requests",
     ):
         with patch.object(
-            lambda_create_callback.dynamodb,
+            create_callback_handler.dynamodb,
             "Table",
-            return_value=mock_table
+            return_value=mock_table,
         ):
-            result = lambda_create_callback.lambda_handler(event, None)
+            result = create_callback_handler.lambda_handler(event, None)
 
     assert result["statusCode"] == 201
 
@@ -42,12 +49,12 @@ def test_missing_phone_number():
     event = {
         "body": json.dumps(
             {
-                "reason": "Billing enquiry"
+                "reason": "Billing enquiry",
             }
         )
     }
 
-    result = lambda_create_callback.lambda_handler(event, None)
+    result = create_callback_handler.lambda_handler(event, None)
 
     assert result["statusCode"] == 400
 
@@ -60,12 +67,12 @@ def test_missing_reason():
     event = {
         "body": json.dumps(
             {
-                "phoneNumber": "+27821234567"
+                "phoneNumber": "+27821234567",
             }
         )
     }
 
-    result = lambda_create_callback.lambda_handler(event, None)
+    result = create_callback_handler.lambda_handler(event, None)
 
     assert result["statusCode"] == 400
 
