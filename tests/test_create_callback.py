@@ -10,7 +10,6 @@ sys.path.insert(0, str(LAMBDA_DIR))
 
 import handler as create_callback_handler
 
-
 def test_create_callback_success():
     event = {
         "body": json.dumps(
@@ -79,3 +78,37 @@ def test_missing_reason():
     body = json.loads(result["body"])
 
     assert body["message"] == "reason is required"
+
+
+def test_create_callback_from_amazon_connect():
+    event = {
+        "Details": {
+            "ContactData": {
+                "CustomerEndpoint": {
+                    "Address": "+27727596485"
+                },
+                "Attributes": {
+                    "reason": "General enquiry"
+                }
+            },
+            "Parameters": {}
+        }
+    }
+
+    mock_table = MagicMock()
+
+    with patch.object(
+        create_callback_handler,
+        "TABLE_NAME",
+        "callback-concierge-requests"
+    ):
+        with patch.object(
+            create_callback_handler.dynamodb,
+            "Table",
+            return_value=mock_table
+        ):
+            result = create_callback_handler.lambda_handler(event, None)
+
+    assert result["status"] == "PENDING"
+    assert "callbackId" in result
+    mock_table.put_item.assert_called_once()

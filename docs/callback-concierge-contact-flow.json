@@ -1,0 +1,219 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "welcome",
+  "Metadata": {
+    "entryPointPosition": {
+      "x": 40,
+      "y": 40
+    },
+    "ActionMetadata": {
+      "welcome": {
+        "position": {
+          "x": 200,
+          "y": 40
+        }
+      },
+      "reason-input": {
+        "position": {
+          "x": 450,
+          "y": 40
+        }
+      },
+      "billing": {
+        "position": {
+          "x": 700,
+          "y": -100
+        }
+      },
+      "technical": {
+        "position": {
+          "x": 700,
+          "y": 40
+        }
+      },
+      "general": {
+        "position": {
+          "x": 700,
+          "y": 180
+        }
+      },
+      "invoke-lambda": {
+        "position": {
+          "x": 950,
+          "y": 40
+        }
+      },
+      "confirmation": {
+        "position": {
+          "x": 1200,
+          "y": 40
+        }
+      },
+      "disconnect": {
+        "position": {
+          "x": 1450,
+          "y": 40
+        }
+      }
+    }
+  },
+  "Actions": [
+    {
+      "Identifier": "welcome",
+      "Type": "MessageParticipant",
+      "Parameters": {
+        "Text": "Welcome to Callback Concierge. We can arrange a callback instead of keeping you waiting."
+      },
+      "Transitions": {
+        "NextAction": "reason-input",
+        "Errors": [],
+        "Conditions": []
+      }
+    },
+    {
+      "Identifier": "reason-input",
+      "Type": "GetParticipantInput",
+      "Parameters": {
+        "Text": "Please select the reason for your callback. Press 1 for billing, press 2 for technical support, or press 3 for a general enquiry.",
+        "InputTimeLimitSeconds": "5"
+      },
+      "Transitions": {
+        "NextAction": "disconnect",
+        "Errors": [
+          {
+            "NextAction": "disconnect",
+            "ErrorType": "InputTimeLimitExceeded"
+          },
+          {
+            "NextAction": "disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ],
+        "Conditions": [
+          {
+            "NextAction": "billing",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "1"
+              ]
+            }
+          },
+          {
+            "NextAction": "technical",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "2"
+              ]
+            }
+          },
+          {
+            "NextAction": "general",
+            "Condition": {
+              "Operator": "Equals",
+              "Operands": [
+                "3"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Identifier": "billing",
+      "Type": "SetContactAttributes",
+      "Parameters": {
+        "Attributes": {
+          "reason": "Billing enquiry"
+        }
+      },
+      "Transitions": {
+        "NextAction": "invoke-lambda",
+        "Errors": [
+          {
+            "NextAction": "disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Identifier": "technical",
+      "Type": "SetContactAttributes",
+      "Parameters": {
+        "Attributes": {
+          "reason": "Technical support"
+        }
+      },
+      "Transitions": {
+        "NextAction": "invoke-lambda",
+        "Errors": [
+          {
+            "NextAction": "disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Identifier": "general",
+      "Type": "SetContactAttributes",
+      "Parameters": {
+        "Attributes": {
+          "reason": "General enquiry"
+        }
+      },
+      "Transitions": {
+        "NextAction": "invoke-lambda",
+        "Errors": [
+          {
+            "NextAction": "disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Identifier": "invoke-lambda",
+      "Type": "InvokeExternalResource",
+      "Parameters": {
+        "ExternalInvocation": {
+          "LambdaArn": "arn:aws:lambda:eu-west-1:687244881512:function:callback-concierge-create-callback"
+        },
+        "InvocationType": "SYNCHRONOUS",
+        "TimeoutSeconds": "8"
+      },
+      "Transitions": {
+        "NextAction": "confirmation",
+        "Errors": [
+          {
+            "NextAction": "disconnect",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Identifier": "confirmation",
+      "Type": "MessageParticipant",
+      "Parameters": {
+        "Text": "Thank you. Your callback request has been successfully recorded. An agent will contact you as soon as possible."
+      },
+      "Transitions": {
+        "NextAction": "disconnect",
+        "Errors": []
+      }
+    },
+    {
+      "Identifier": "disconnect",
+      "Type": "DisconnectParticipant",
+      "Parameters": {},
+      "Transitions": {
+        "NextAction": null,
+        "Errors": [],
+        "Conditions": []
+      }
+    }
+  ]
+}

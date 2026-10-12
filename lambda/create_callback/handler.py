@@ -13,13 +13,34 @@ dynamodb = boto3.resource("dynamodb")
 
 def lambda_handler(event, context):
     try:
-        body = event.get("body", "{}")
 
-        if isinstance(body, str):
-            body = json.loads(body)
+        # API Gateway request
+        if "body" in event:
+            body = event.get("body", "{}")
 
-        phone_number = body.get("phoneNumber")
-        reason = body.get("reason")
+            if isinstance(body, str):
+                body = json.loads(body)
+
+            phone_number = body.get("phoneNumber")
+            reason = body.get("reason")
+
+        # Amazon Connect request
+        elif "Details" in event:
+            details = event["Details"]
+            contact_data = details.get("ContactData", {})
+            attributes = contact_data.get("Attributes", {})
+
+            phone_number = contact_data.get(
+                "CustomerEndpoint", {}
+            ).get("Address")
+
+            reason = attributes.get("reason")
+
+        else:
+            return response(
+                400,
+                {"message": "Unsupported request format"}
+            )
 
         if not phone_number:
             return response(
@@ -49,13 +70,21 @@ def lambda_handler(event, context):
         table = dynamodb.Table(TABLE_NAME)
         table.put_item(Item=item)
 
-        return response(
-            201,
-            {
-                "callbackId": callback_id,
-                "status": "PENDING"
-            }
-        )
+        # API Gateway response
+        if "body" in event:
+            return response(
+                201,
+                {
+                    "callbackId": callback_id,
+                    "status": "PENDING"
+                }
+            )
+
+        # Amazon Connect response
+        return {
+            "callbackId": callback_id,
+            "status": "PENDING"
+        }
 
     except Exception as error:
         print(
@@ -68,10 +97,13 @@ def lambda_handler(event, context):
             )
         )
 
-        return response(
-            500,
-            {"message": "Internal server error"}
-        )
+        if "body" in event:
+            return response(
+                500,
+                {"message": "Internal server error"}
+            )
+
+        raise
 
 
 def response(status_code, body):
