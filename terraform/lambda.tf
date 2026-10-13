@@ -49,6 +49,7 @@ resource "aws_lambda_function" "process_callbacks" {
       CONNECT_INSTANCE_ID   = "8e86842f-ba31-4267-af69-9ca7200d894b"
       CONNECT_CONTACT_FLOW_ID = "a574bffb-8578-413c-bee6-2c3eb32ee8a9"
       CONNECT_REGION        = "eu-west-2"
+      PROCESS_ELIGIBLE_ONLY = "true"
     }
   }
 }

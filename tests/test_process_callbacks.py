@@ -24,6 +24,7 @@ def processor():
             "CONNECT_INSTANCE_ID": "test-instance",
             "CONNECT_CONTACT_FLOW_ID": "test-flow",
             "CONNECT_REGION": "eu-west-2",
+            "PROCESS_ELIGIBLE_ONLY": "true",
         },
     ):
         with patch("boto3.resource") as mock_resource, patch(
@@ -52,6 +53,7 @@ def sample_callback():
         "phoneNumber": "+27720000000",
         "reason": "Technical support",
         "status": "PENDING",
+        "processingEligible": True,
         "createdAt": "2026-10-12T09:00:00+00:00",
         "attempts": 0,
     }
@@ -116,3 +118,19 @@ def test_records_failure_when_connect_call_fails(processor):
         failure_update["ExpressionAttributeValues"][":failed"]
         == "FAILED"
     )
+
+def test_skips_callback_when_not_eligible(processor):
+    handler, table, connect = processor
+
+    callback = sample_callback()
+    callback["processingEligible"] = False
+    table.query.return_value = {"Items": [callback]}
+
+    result = handler.lambda_handler(
+        {"eligibleOnly": True},
+        None,
+    )
+
+    assert result == {"processed": 0, "skipped": 1, "failed": 0}
+    connect.start_task_contact.assert_not_called()
+    table.update_item.assert_not_called()

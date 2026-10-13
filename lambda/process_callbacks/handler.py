@@ -40,8 +40,9 @@ def lambda_handler(event, context):
     processed = 0
     skipped = 0
     failed = 0
-
     
+    eligible_only = os.environ.get("PROCESS_ELIGIBLE_ONLY", "true").lower() == "true"
+
     
     callbacks = []
     query_kwargs = {
@@ -60,6 +61,15 @@ def lambda_handler(event, context):
         query_kwargs["ExclusiveStartKey"] = last_evaluated_key
 
     for callback in callbacks:
+        if eligible_only and callback.get("processingEligible") is not True:
+            skipped += 1
+            logger.info(
+                json.dumps({
+                    "message": "Callback is not eligible for processing",
+                    "callback_id": callback.get("callbackId"),
+                })
+            )
+            continue
 
         callback_id = callback["callbackId"]
 
