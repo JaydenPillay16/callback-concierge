@@ -61,6 +61,7 @@ def lambda_handler(event, context):
         query_kwargs["ExclusiveStartKey"] = last_evaluated_key
 
     for callback in callbacks:
+        
         if eligible_only and callback.get("processingEligible") is not True:
             skipped += 1
             logger.info(

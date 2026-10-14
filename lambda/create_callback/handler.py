@@ -62,6 +62,7 @@ def lambda_handler(event, context):
             "phoneNumber": phone_number,
             "reason": reason,
             "status": "PENDING",
+            "processingEligible": True,
             "createdAt": timestamp,
             "updatedAt": timestamp,
             "attempts": 0

@@ -45,11 +45,33 @@ resource "aws_lambda_function" "process_callbacks" {
 
   environment {
     variables = {
-      TABLE_NAME            = aws_dynamodb_table.callback_requests.name
-      CONNECT_INSTANCE_ID   = "8e86842f-ba31-4267-af69-9ca7200d894b"
+      TABLE_NAME              = aws_dynamodb_table.callback_requests.name
+      CONNECT_INSTANCE_ID     = "8e86842f-ba31-4267-af69-9ca7200d894b"
       CONNECT_CONTACT_FLOW_ID = "a574bffb-8578-413c-bee6-2c3eb32ee8a9"
-      CONNECT_REGION        = "eu-west-2"
-      PROCESS_ELIGIBLE_ONLY = "true"
+      CONNECT_REGION          = "eu-west-2"
+      PROCESS_ELIGIBLE_ONLY   = "true"
     }
   }
+}
+
+
+resource "aws_cloudwatch_event_rule" "process_callbacks" {
+  name                = "callback-concierge-process-callbacks"
+  description         = "Periodically process eligible pending callback requests"
+  schedule_expression = "rate(5 minutes)"
+  state               = "DISABLED"
+}
+
+resource "aws_cloudwatch_event_target" "process_callbacks" {
+  rule      = aws_cloudwatch_event_rule.process_callbacks.name
+  target_id = "ProcessCallbacksLambda"
+  arn       = aws_lambda_function.process_callbacks.arn
+}
+
+resource "aws_lambda_permission" "eventbridge_process_callbacks" {
+  statement_id  = "AllowEventBridgeInvokeProcessCallbacks"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.process_callbacks.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.process_callbacks.arn
 }

@@ -43,6 +43,10 @@ def test_create_callback_success():
 
     mock_table.put_item.assert_called_once()
 
+    saved_item = mock_table.put_item.call_args.kwargs["Item"]
+    assert saved_item["processingEligible"] is True
+    assert saved_item["status"] == "PENDING"
+
 
 def test_missing_phone_number():
     event = {
@@ -112,3 +116,7 @@ def test_create_callback_from_amazon_connect():
     assert result["status"] == "PENDING"
     assert "callbackId" in result
     mock_table.put_item.assert_called_once()
+
+    saved_item = mock_table.put_item.call_args.kwargs["Item"]
+    assert saved_item["processingEligible"] is True
+    assert saved_item["status"] == "PENDING"
